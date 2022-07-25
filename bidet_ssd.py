@@ -15,10 +15,10 @@ MBOX = [4, 6, 6, 6, 4, 4]
 class BiDetVGGBlock(nn.Module):
 
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False,
-                 downsample=None):
+                 downsample=None,is_rsign=False):
         super(BiDetVGGBlock, self).__init__()
         self.conv = BinarizeConv2d(in_channels, out_channels,
-                                   kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
+                                   kernel_size=kernel_size, stride=stride, padding=padding, bias=bias,is_rsign=is_rsign)
         self.bn = nn.BatchNorm2d(out_channels)
         self.downsample = downsample
 
@@ -34,7 +34,7 @@ class BiDetVGGBlock(nn.Module):
         return x
 
 
-def bidet_vgg(cfg, i=3, bias=False):
+def bidet_vgg(cfg, i=3, bias=False,is_rsign=False):
     layers = []
     in_channels = i
     for j in range(len(cfg)):
@@ -47,7 +47,7 @@ def bidet_vgg(cfg, i=3, bias=False):
                                          nn.Conv2d(in_channels=cfg[j - 1], out_channels=cfg[j + 1],
                                                    kernel_size=1, stride=1, padding=0, bias=bias),
                                          nn.BatchNorm2d(cfg[j + 1])
-                                     ))]
+                                     ),is_rsign=is_rsign)]
             in_channels = cfg[j + 1]
         elif v == 'C':
             layers += [BiDetVGGBlock(in_channels=cfg[j - 1], out_channels=cfg[j + 1],
@@ -57,14 +57,14 @@ def bidet_vgg(cfg, i=3, bias=False):
                                          nn.Conv2d(in_channels=cfg[j - 1], out_channels=cfg[j + 1],
                                                    kernel_size=1, stride=1, padding=0, bias=bias),
                                          nn.BatchNorm2d(cfg[j + 1])
-                                     ))]
+                                     ),is_rsign=is_rsign)]
             in_channels = cfg[j + 1]
         else:
             if in_channels == i:
                 conv = nn.Conv2d(in_channels, v, kernel_size=3, stride=1, padding=1, bias=bias)
                 layers += [conv, nn.BatchNorm2d(v)]
             else:
-                layers += [BiDetVGGBlock(in_channels, v, kernel_size=3, padding=1, bias=bias)]
+                layers += [BiDetVGGBlock(in_channels, v, kernel_size=3, padding=1, bias=bias,is_rsign=is_rsign)]
             in_channels = v
 
     pool5 = nn.MaxPool2d(kernel_size=3, stride=1, padding=1)
@@ -266,7 +266,7 @@ def multibox(vgg, extra_layers, cfg, num_classes):
 
 
 def build_bidet_ssd(phase, size=300, num_classes=21,
-                    nms_conf_thre=0.01, nms_iou_thre=0.45, nms_top_k=200):
+                    nms_conf_thre=0.01, nms_iou_thre=0.45, nms_top_k=200,is_rsign=False):
     if phase != "test" and phase != "train":
         print("ERROR: Phase: " + phase + " not recognized")
         return
@@ -274,7 +274,7 @@ def build_bidet_ssd(phase, size=300, num_classes=21,
         print("ERROR: You specified size " + repr(size) + ". However, " +
               "currently only SSD300 (size=300) is supported!")
         return
-    base_, extras_, head_ = multibox(bidet_vgg(CFG, 3, bias=False),
+    base_, extras_, head_ = multibox(bidet_vgg(CFG, 3, bias=False,is_rsign=is_rsign),
                                      add_extras(EXTRAS, 1024),
                                      MBOX, num_classes)
     return BiDetSSD(phase, size, base_, extras_, head_, num_classes,

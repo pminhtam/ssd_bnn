@@ -60,19 +60,32 @@ class SignSTEWeight(Function):
         grad_input.copy_(grad_output)
         return grad_input
 
-
+class LearnableBias(nn.Module):
+    def __init__(self, out_chn):
+        super(LearnableBias, self).__init__()
+        self.bias = nn.Parameter(torch.zeros(1,out_chn,1,1), requires_grad=True)
+    def forward(self, x):
+        out = x + self.bias.expand_as(x)
+        return out
 class BinarizeConv2d(nn.Conv2d):
 
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
                  padding=0, dilation=1, groups=1, bias=True, weight_magnitude_aware=True, activation_value_aware=True,
+                 is_rsign = False,
                  **kwargs):
         super(BinarizeConv2d, self).__init__(
             in_channels, out_channels, kernel_size, stride, padding, dilation,
             groups, bias)
+        self.move11 = LearnableBias(in_channels)
+        self.is_rsign = is_rsign
+        if self.is_rsign:
+            print("Using ReLU-sign")
         self.weight_magnitude_aware = weight_magnitude_aware
         self.activation_value_aware = activation_value_aware
 
     def forward(self, input):
+        if self.is_rsign:
+            input = self.move11(input)
         if self.activation_value_aware:
             input = SignTwoOrders.apply(input)
         else:
