@@ -83,6 +83,12 @@ parser.add_argument('--opt', default='Adam', type=str,
                     help='Optimizer for training the network')
 parser.add_argument('--clip_grad', default=False, type=str2bool,
                     help='whether to clip gradient when training')
+
+parser.add_argument('--is_rsign', default=False, type=str2bool,
+                    help='whether to clip gradient when training')
+
+parser.add_argument('--add_name_wandb', default="", type=str,
+                    help='add name to wandb project')
 args = parser.parse_args()
 
 if torch.cuda.is_available():
@@ -98,14 +104,14 @@ else:
 # start_datetime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 start_datetime = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 # logs_dir = os.path.join('logs', args.dataset, str(start_datetime))
-logs_dir = os.path.join('logs', args.dataset)
+logs_dir = os.path.join('logs', args.dataset + args.add_name_wandb)
 
 if not os.path.exists(logs_dir):
     os.makedirs(logs_dir)
 
 
 def train():
-    wandb.init(project="bidet_superpod-" + args.dataset)
+    wandb.init(project="bidet_superpod-" + args.dataset + args.add_name_wandb)
     wandb.init(config=args)
 
     global REGULARIZATION_LOSS_WEIGHT, PRIOR_LOSS_WEIGHT, NMS_CONF_THRE
@@ -119,7 +125,7 @@ def train():
                                transform=SSDAugmentation(cfg['min_dim'], MEANS))
 
     ssd_net = build_bidet_ssd('train', cfg['min_dim'], cfg['num_classes'],
-                              nms_conf_thre=NMS_CONF_THRE)
+                              nms_conf_thre=NMS_CONF_THRE,is_rsign=args.is_rsign)
     net = ssd_net
 
     if args.cuda:
@@ -139,7 +145,12 @@ def train():
         if args.basenet.lower() != 'none':
             vgg_weights = torch.load(args.basenet)
             print('Loading base network...')
-            ssd_net.vgg.layers.load_state_dict(vgg_weights, strict=True)
+            try:
+                ssd_net.vgg.layers.load_state_dict(vgg_weights, strict=True)
+            except:     # ignore missing key
+                print("Load base network failed")
+                print("Ignore missing key")
+                ssd_net.vgg.layers.load_state_dict(vgg_weights, strict=False)
 
     if args.cuda:
         # net = nn.DataParallel(ssd_net).cuda()
