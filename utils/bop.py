@@ -38,8 +38,8 @@ _size_2_t = _scalar_or_tuple_2_t[int]
 class MomentumWithThresholdBinaryOptimizer(Optimizer):
     def __init__(
         self,
-        binary_params,
-        bn_params,
+        binary_params,      # binary parameters
+        bn_params,          # non-binary parameters
         ar: float = 0.0001,
         threshold: float = 0,
         adam_lr=0.001,
