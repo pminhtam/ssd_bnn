@@ -34,7 +34,8 @@ _size_2_t = _scalar_or_tuple_2_t[int]
 # Optimizers for binary networks
 # taken from https://github.com/bsridatta/Rethinking-Binarized-Neural-Network-Optimization/blob/master/research_seed/bytorch/binary_neural_network.py
 # Author : Sri Datta Budaraju
-
+# Other Code
+# https://github.com/liyunqianggyn/Reproduce_BOP/blob/main/trainer.py
 class MomentumWithThresholdBinaryOptimizer(Optimizer):
     def __init__(
         self,
@@ -42,7 +43,8 @@ class MomentumWithThresholdBinaryOptimizer(Optimizer):
         bn_params,          # non-binary parameters
         ar: float = 0.0001,
         threshold: float = 0,
-        adam_lr=0.001,
+        lr=1e-3, betas=(0.9, 0.999), eps=1e-8,
+                 weight_decay=0, amsgrad=False
     ):
         if not 0 < ar < 1:
             raise ValueError(
@@ -56,9 +58,11 @@ class MomentumWithThresholdBinaryOptimizer(Optimizer):
             )
 
         self.total_weights = {}
-        self._adam = Adam(bn_params, lr=adam_lr)
+        defaults = dict(adaptivity_rate=ar, threshold=threshold,lr=lr, betas=betas, eps=eps,
+                        weight_decay=weight_decay, amsgrad=amsgrad)
+        self._adam = Adam(bn_params, lr=lr)
 
-        defaults = dict(adaptivity_rate=ar, threshold=threshold)
+        # defaults = dict(adaptivity_rate=ar, threshold=threshold)
         super(MomentumWithThresholdBinaryOptimizer, self).__init__(
             binary_params, defaults
         )
@@ -79,7 +83,10 @@ class MomentumWithThresholdBinaryOptimizer(Optimizer):
                 y = ar
 
             for param_idx, p in enumerate(params):
-                grad = p.grad.data
+                try:
+                    grad = p.grad.data
+                except:
+                    continue
                 state = self.state[p]
 
                 if "moving_average" not in state:
