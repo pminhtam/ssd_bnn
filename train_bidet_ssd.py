@@ -28,7 +28,7 @@ import torch.backends.cudnn as cudnn
 import torch.utils.data as data
 import argparse
 import wandb
-
+from utils.bop import MomentumWithThresholdBinaryOptimizer
 os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 
 REGULARIZATION_LOSS_WEIGHT = 1.
@@ -162,6 +162,18 @@ def train():
     elif args.opt.lower() == 'Adam'.lower():
         optimizer = optim.Adam(filter(lambda p: p.requires_grad, net.parameters()), lr=args.lr,
                                weight_decay=args.weight_decay)
+    elif args.opt.lower() == 'bop'.lower():
+        parameters = list(net.named_parameters())
+        binary_parameters = []
+        non_binary_parameters = []
+        for name, parameter in parameters:
+            if parameter.requires_grad:
+                if "binary" in name:
+                    binary_parameters.append(parameter)
+                else:
+                    non_binary_parameters.append(parameter)
+        print(binary_parameters)
+        optimizer = MomentumWithThresholdBinaryOptimizer(binary_parameters,non_binary_parameters, lr=args.lr)
     else:
         exit(-1)
     if opt_state_dict is not None:
@@ -372,7 +384,7 @@ def train():
         prior_loss_save += loss_p
         t1 = time.time()
 
-        if iteration % 100 == 0:
+        if iteration % 1000 == 0:
             print('timer: %.4f sec.' % (t1 - t0))
             print('iter:', iteration, 'loss:', round(loss.detach().cpu().item(), 4))
             print('conf_loss:', round(loss_c, 4), 'loc_loss:', round(loss_l, 4),
