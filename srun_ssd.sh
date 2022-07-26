@@ -6,8 +6,8 @@
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
 #SBATCH --tasks-per-node=1
-#SBATCH --mem-per-cpu=2G
-#SBATCH --cpus-per-task=70
+#SBATCH --mem-per-cpu=5G
+#SBATCH --cpus-per-task=32
 #SBATCH --partition=research
 
 nvidia-smi
@@ -32,4 +32,4 @@ pip install pycocotools
 #unzip /vinai-public-dataset/COCO/val2014.zip -d data/coco/images/
 #unzip /vinai-public-dataset/COCO/annotations_trainval2014.zip -d data/coco/
 #unzip /vinai-public-dataset/COCO/instances_minival2014.json.zip -d data/coco/annotations/
-python train_bidet_ssd.py --data_root /lustre/scratch/client/vinai/users/tampm2/ssd.pytorch/data/coco  --dataset COCO --num_workers 64 --batch_size 64
+python train_bidet_ssd.py --data_root /lustre/scratch/client/vinai/users/tampm2/ssd.pytorch/data/coco  --dataset COCO --num_workers 32 --batch_size 32 --resume logs/COCO/model_130000_loc_2.2722_conf_4.2581_reg_0.0_prior_0.0_loss_6.5304_lr_2e-05.pth --start_iter 130001 --lr 2e-5

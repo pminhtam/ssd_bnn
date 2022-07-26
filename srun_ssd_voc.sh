@@ -6,8 +6,8 @@
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
 #SBATCH --tasks-per-node=1
-#SBATCH --mem-per-cpu=2G
-#SBATCH --cpus-per-task=70
+#SBATCH --mem-per-cpu=5G
+#SBATCH --cpus-per-task=32
 #SBATCH --partition=research
 
 nvidia-smi
@@ -30,4 +30,4 @@ pip install pycocotools
 #tar -xvf /vinai-public-dataset/VOC2012/VOCtrainval_11-May-2012.tar -C data/
 #tar -xvf /vinai-public-dataset/VOC2007/VOCtrainval_06-Nov-2007.tar -C data/
 #tar -xvf /vinai-public-dataset/VOC2007/VOCtest_06-Nov-2007.tar -C data/
-python train_bidet_ssd.py --data_root /lustre/scratch/client/vinai/users/tampm2/ssd.pytorch/data/VOCdevkit/ --dataset VOC --num_workers 64 --batch_size 64
+python train_bidet_ssd.py --data_root /lustre/scratch/client/vinai/users/tampm2/ssd.pytorch/data/VOCdevkit/ --dataset VOC --num_workers 32 --batch_size 32 --resume logs/VOC/model_155000_loc_0.9225_conf_0.464_reg_0.0108_prior_0.2761_loss_1.6733_lr_1e-05.pth --start_iter 155001 --lr 2e-5
