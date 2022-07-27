@@ -412,6 +412,7 @@ def train():
                        '_prior_' + str(round(prior_loss_save / 5000., 4)) +
                        '_loss_' + str(round(loss_save / 5000., 4)) +
                        '_lr_' + str(round(args.lr * (args.gamma ** step_index), 6)) + '.pth')
+            torch.save(checkpoint, logs_dir + '/model_last.pth')
 
             loc_loss_save = 0.
             conf_loss_save = 0.
