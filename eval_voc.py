@@ -45,9 +45,9 @@ parser.add_argument('--iou_threshold', default=0.45, type=float,
                     help='Detection confidence threshold')
 parser.add_argument('--top_k', default=200, type=int,
                     help='Further restrict the number of predictions to parse')
-parser.add_argument('--cuda', default=True, type=str2bool,
+parser.add_argument('--cuda', default=False, type=str2bool,
                     help='Use cuda to train model')
-parser.add_argument('--voc_root', default="/path/to/voc/",
+parser.add_argument('--voc_root', default="./path/to/voc/",
                     help='Location of VOC root directory')
 
 args = parser.parse_args()
@@ -381,6 +381,8 @@ def test_net(net, dataset):
         im, gt, h, w = dataset.pull_item(i)
 
         x = Variable(im.unsqueeze(0))
+        print(x.shape)
+        exit(0)
         if args.cuda:
             x = x.cuda()
         _t['im_detect'].tic()
@@ -423,14 +425,18 @@ from prettytable import PrettyTable
 def count_parameters(model):
     table = PrettyTable(["Modules", "Parameters"])
     total_params = 0
+    bnn_params = 0
     for name, parameter in model.named_parameters():
         # print(name)
         if not parameter.requires_grad: continue
         params = parameter.numel()
         table.add_row([name, params])
         total_params+=params
+        if "bnn" in name:
+            bnn_params+=params
     print(table)
     print(f"Total Trainable Params: {total_params}")
+    print(f"BNN Trainable Params: {bnn_params}")
     return total_params
 def model_summary(model):
     print("model_summary")
@@ -469,17 +475,17 @@ if __name__ == '__main__':
     if args.cuda:
         net = net.cuda()
         cudnn.benchmark = True
-    try:
-        net.load_state_dict(torch.load(args.weight_path))
-    except:
-        net.load_state_dict(torch.load(args.weight_path)['weight'])
+    # try:
+    #     net.load_state_dict(torch.load(args.weight_path))
+    # except:
+    #     net.load_state_dict(torch.load(args.weight_path)['weight'])
     net.eval()
-    pytorch_total_params = sum(p.numel() for p in net.parameters())
+    # pytorch_total_params = sum(p.numel() for p in net.parameters())
     import torchsummary
     # torchsummary.summary(net,(3,300,300))
-    print(pytorch_total_params)
-    print(net)
-    print(count_parameters(net))
+    # print(pytorch_total_params)
+    # print(net)
+    # print(count_parameters(net))
     # model_summary(net)
     # exit()
     print('Finished loading model!')

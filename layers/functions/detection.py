@@ -102,7 +102,15 @@ class DetectPrior:
 
         # Decode predictions into bboxes.
         for i in range(batch_size):
+            # print(loc_data[i])
+            # print("prior_data : ",prior_data)
+            # print("prior_data : ","\n".join([", ".join([str(nnn) for nnn in row]) for row in prior_data.cpu().numpy()]))
+
             decoded_boxes = decode(loc_data[i], prior_data, self.variance)
+            # print("decoded_boxes : ",decoded_boxes)
+            # print("conf_preds : ",conf_preds)
+            # print(decoded_boxes.shape)
+            # exit(0)
             # For each class, perform nms
             conf_scores = conf_preds[i].clone()
 

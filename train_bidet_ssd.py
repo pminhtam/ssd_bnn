@@ -29,7 +29,7 @@ import torch.utils.data as data
 import argparse
 import wandb
 from utils.bop import MomentumWithThresholdBinaryOptimizer
-os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+os.environ["CUDA_VISIBLE_DEVICES"] = '2'
 
 REGULARIZATION_LOSS_WEIGHT = 1.
 PRIOR_LOSS_WEIGHT = 1.
@@ -111,8 +111,10 @@ if not os.path.exists(logs_dir):
 
 
 def train():
-    wandb.init(project="bidet_superpod-" + args.dataset + args.add_name_wandb)
-    wandb.init(config=args)
+    is_wandb = False
+    if is_wandb:
+        wandb.init(project="bidet_superpod-" + args.dataset + args.add_name_wandb)
+        wandb.init(config=args)
 
     global REGULARIZATION_LOSS_WEIGHT, PRIOR_LOSS_WEIGHT, NMS_CONF_THRE
     if args.dataset == 'COCO':
@@ -214,7 +216,8 @@ def train():
                                   generator=torch.Generator(device='cuda')
                                   )
     # create batch iterator
-    wandb.watch(net, log_freq=1000)
+    if is_wandb:
+        wandb.watch(net, log_freq=1000)
 
     batch_iterator = iter(data_loader)
     for iteration in range(args.start_iter, cfg['max_iter']):
@@ -298,20 +301,31 @@ def train():
 
         if PRIOR_LOSS_WEIGHT != 0.:
             loss_count = 0.
-
+            # print(priors)
+            print(loc_data)
+            print(conf_data)
+            # print(priors.shape)
+            print(loc_data.shape)
+            print(conf_data.shape)
             detect_result = net.detect_prior.forward(
                 loc_data,  # localization preds
                 net.softmax(conf_data),  # confidence preds
                 priors,  # default boxes
                 gt_class
             )  # [batch, classes, top_k, 5 (score, (y1, x1, y2, x2))]
+            print(detect_result)
+            print(detect_result.shape)
 
             num_classes = detect_result.size(1)
+            print(num_classes)
 
             # skip j = 0, because it's the background class
             for j in range(1, num_classes):
                 all_dets = detect_result[:, j, :, :]  # [batch, top_k, 5]
                 all_mask = all_dets[:, :, :1].gt(0.).expand_as(all_dets)  # [batch, top_k, 5]
+                print(all_dets)
+                print(all_mask)
+                exit(0)
 
                 for batch_idx in range(batch_size):
                     # skip non-existed class
@@ -393,9 +407,10 @@ def train():
             if args.clip_grad:
                 print('gradient norm:', grad_norm)
             torch.cuda.empty_cache()
-            wandb.log({'conf_loss:': round(loss_c, 4), 'loc_loss:': round(loss_l, 4),
-                  'reg_loss:': round(loss_r, 4), 'prior_loss:': round(loss_p, 4),
-                  'lr:': lr})
+            if is_wandb:
+                wandb.log({'conf_loss:': round(loss_c, 4), 'loc_loss:': round(loss_l, 4),
+                      'reg_loss:': round(loss_r, 4), 'prior_loss:': round(loss_p, 4),
+                      'lr:': lr})
 
         if iteration != 0 and iteration % 5000 == 0:
             print('Saving state, iter:', iteration)

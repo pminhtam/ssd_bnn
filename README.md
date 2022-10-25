@@ -1,3 +1,7 @@
+```shell
+python eval_voc.py --voc_root=../arp_data/VOC2007/VOCdevkit/ --weight_path=/vinai/tampm2/code/ssd_bnn/logs/VOCclip_grad/model_95000_loc_1.0231_conf_2.3187_reg_0.0155_prior_0.1799_loss_3.5372_lr_0.0001.pth 
+```
+
 # BiDet
 Source from https://github.com/ZiweiWangTHU/BiDet
 ## License

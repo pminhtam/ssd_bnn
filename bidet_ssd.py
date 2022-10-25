@@ -17,6 +17,7 @@ class BiDetVGGBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False,
                  downsample=None,is_rsign=False):
         super(BiDetVGGBlock, self).__init__()
+        # self.binary_conv = BinarizeConv2d(in_channels, out_channels,
         self.conv = BinarizeConv2d(in_channels, out_channels,
                                    kernel_size=kernel_size, stride=stride, padding=padding, bias=bias,is_rsign=is_rsign)
         self.bn = nn.BatchNorm2d(out_channels)
@@ -25,6 +26,7 @@ class BiDetVGGBlock(nn.Module):
     def forward(self, x):
         residual = x
         x = self.bn(self.conv(x))
+        # x = self.bn(self.binary_conv(x))
 
         if self.downsample is not None:
             residual = self.downsample(residual)
@@ -255,7 +257,10 @@ def multibox(vgg, extra_layers, cfg, num_classes):
         try:
             channel = vgg[v].out_channels
         except:
-            channel = vgg[v].conv.out_channels
+            try:
+                channel = vgg[v].conv.out_channels
+            except:
+                channel = vgg[v].binary_conv.out_channels
 
         loc_layers += [nn.Conv2d(channel, cfg[k] * 8, kernel_size=3, padding=1)]
         conf_layers += [nn.Conv2d(channel, cfg[k] * num_classes, kernel_size=3, padding=1)]
